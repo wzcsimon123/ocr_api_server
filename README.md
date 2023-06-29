@@ -58,6 +58,8 @@ docker run -p 9898:9898 -d ocr_server:v1
 
 **具体请看test_api.py文件**
 
+修改: 增加http://{host}:{port}/ocr/url/text接口
+
 ```python
 # 1、测试是否启动成功，可以通过直接GET访问http://{host}:{port}/ping来测试，如果返回pong则启动成功
 
