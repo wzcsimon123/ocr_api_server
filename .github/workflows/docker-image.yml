@@ -1,18 +1,36 @@
-name: Docker Image CI
+name: Build and Publish Docker arm64 Image to GitHub Release
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main  # 适用于主分支，根据需要更改
 
 jobs:
-
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 使用Ubuntu runner
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up QEMU
+      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+    - name: Build Docker image
+      run: |
+        docker buildx create --use
+        docker buildx build --platform linux/arm64 -t your-image-name:latest .
+
+    - name: Archive Docker image
+      run: |
+        docker save -o image.tar your-image-name:latest
+        mkdir -p artifacts
+        mv image.tar artifacts/
+
+    - name: Upload Docker image to Release
+      id: upload-release-asset
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/image.tar
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
