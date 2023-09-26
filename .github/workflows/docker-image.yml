@@ -1,4 +1,4 @@
-name: Build Docker Image and Push to GitHub Packages
+name: Build Docker arm64 Image
 
 on:
   push:
@@ -13,18 +13,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up QEMU (only for ARM builds, if needed)
+    - name: Set up QEMU
       run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
     - name: Build Docker image
+      run: docker build -t your-image-name:latest -f Dockerfile .
+
+    - name: Save Docker image to archive
       run: |
-        docker build -t your-image-name:latest .
+        mkdir -p artifacts
+        docker save -o artifacts/image.tar your-image-name:latest
 
-    - name: Authenticate with GitHub Packages
-      run: echo ${{ secrets.GITHUB_TOKEN }} | docker login docker.pkg.github.com -u ${{ github.repository_owner }} --password-stdin
-
-    - name: Tag Docker image
-      run: docker tag your-image-name:latest docker.pkg.github.com/${{ github.repository }}/your-image-name:latest
-
-    - name: Push Docker image to GitHub Packages
-      run: docker push docker.pkg.github.com/${{ github.repository }}/your-image-name:latest
+    - name: Upload Docker image to GitHub Package Registry
+      uses: docker/upload-action@v2
+      with:
+        name: latest
+        registry: ghcr.io
+        image: your-image-name
+        path: artifacts/image.tar
+      env:
+        CR_PAT: ${{ secrets.CR_PAT }}
